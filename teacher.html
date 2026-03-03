@@ -1,0 +1,293 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Teacher Dashboard - Smart Attendance</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="script.js" defer></script>
+</head>
+<body>
+  <header class="navbar">
+    <h1>Teacher Dashboard</h1>
+    <nav>
+      <span id="teacherInfo" style="margin-right: 20px; color: rgba(255,255,255,0.8);"></span>
+      <a href="index.html" onclick="logout()">Logout</a>
+    </nav>
+  </header>
+
+  <main class="dashboard">
+    <section class="card">
+      <h2>Generate QR Session</h2>
+      <form id="qrForm">
+        <div class="form-row">
+          <div class="form-group">
+            <label for="subject_name">Subject Name</label>
+            <input type="text" id="subject_name" placeholder="Enter Subject Name" required>
+          </div>
+          <div class="form-group">
+            <label for="class_name">Class Name</label>
+            <input type="text" id="class_name" placeholder="Enter Class Name" required>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="duration">Session Duration (minutes)</label>
+            <input type="number" id="duration" value="60" min="15" max="180" required>
+          </div>
+          <div class="form-group">
+            <label for="attendance_range">Attendance Range (meters)</label>
+            <input type="number" id="attendance_range" value="100" min="10" max="500">
+          </div>
+        </div>
+        <div class="form-group">
+          <label>GPS Location</label>
+          <div class="location-display" id="locationDisplay">
+            <span id="locationText">Getting location...</span>
+            <button type="button" class="btn-secondary" onclick="refreshLocation()">Refresh Location</button>
+          </div>
+        </div>
+        <button type="submit">Generate QR & Start Session</button>
+      </form>
+      <div id="qrStatus" class="status-message"></div>
+    </section>
+
+    <section class="card">
+      <h2>Current Active Session</h2>
+      <div id="activeSessionDisplay">
+        <p class="no-session">No active session</p>
+      </div>
+      <div class="session-controls" style="text-align: center; margin-top: 15px;">
+        <button onclick="endCurrentSession()" class="btn-secondary" id="endSessionBtn" style="display: none;">End Session</button>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Manual Attendance</h2>
+      <div class="manual-attendance-container">
+        <div class="manual-controls">
+          <div class="form-row">
+            <select id="manualClass" onchange="loadStudentsForManual()">
+              <option value="">Select Class for Manual Attendance</option>
+            </select>
+            <input type="text" id="searchStudent" placeholder="Search students..." oninput="filterStudentList()">
+          </div>
+          <div class="bulk-actions">
+            <button onclick="markAllPresent()" class="btn-secondary">Mark All Present</button>
+            <button onclick="markAllAbsent()" class="btn-secondary">Mark All Absent</button>
+            <button onclick="clearSelection()" class="btn-secondary">Clear All</button>
+          </div>
+        </div>
+        
+        <div id="studentsList" class="students-list">
+          <p>Select a class to view students</p>
+        </div>
+        
+        <div class="manual-submit">
+          <textarea id="manualReason" placeholder="Reason for manual attendance (optional)" rows="2"></textarea>
+          <button onclick="submitManualAttendance()" class="btn" id="submitManualBtn" disabled>Submit Manual Attendance</button>
+        </div>
+      </div>
+      <div id="manualStatus" class="status-message"></div>
+    </section>
+
+    <section class="card">
+      <h2>Class Attendance Overview</h2>
+      <div class="attendance-filters">
+        <select id="viewClass" onchange="loadClassAttendance()">
+          <option value="">Select Class</option>
+        </select>
+        <input type="date" id="viewDate" onchange="loadClassAttendance()">
+        <button onclick="exportClassAttendance()" class="btn-secondary">Export CSV</button>
+      </div>
+      <div id="classAttendanceView" class="data-display">
+        <p>Select class and date to view attendance</p>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Add Curricular Activity</h2>
+      <form id="activityForm">
+        <div class="form-row">
+          <div class="form-group">
+            <label for="activity_title">Activity Title</label>
+            <input type="text" id="activity_title" placeholder="Enter Activity Title" required>
+          </div>
+          <div class="form-group">
+            <label for="activity_type">Activity Type</label>
+            <select id="activity_type" required>
+              <option value="">Select Type</option>
+              <option value="assignment">Assignment</option>
+              <option value="project">Project</option>
+              <option value="quiz">Quiz</option>
+              <option value="presentation">Presentation</option>
+              <option value="fieldwork">Field Work</option>
+              <option value="workshop">Workshop</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="activity_description">Description</label>
+          <textarea id="activity_description" placeholder="Activity Description" rows="3"></textarea>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="activity_class">Assign to Class</label>
+            <select id="activity_class" required>
+              <option value="">Select Class</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="activity_due_date">Due Date</label>
+            <input type="date" id="activity_due_date" required>
+          </div>
+        </div>
+        <button type="submit">Add Activity</button>
+      </form>
+      <div id="activityStatus" class="status-message"></div>
+      
+      <div id="recentActivities" class="data-display" style="margin-top: 20px;">
+        <h4>Recent Activities</h4>
+        <div id="activitiesList">
+          <p>Your recent activities will appear here</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Live Attendance</h2>
+      <div class="attendance-controls">
+        <button onclick="refreshLiveAttendance()" class="btn-secondary">Refresh Live</button>
+        <button onclick="exportCurrentSessionCSV()" class="btn-secondary">Export Session CSV</button>
+      </div>
+      <div id="liveAttendance" class="attendance-list">
+        <p>Start a session to see live attendance</p>
+      </div>
+    </section>
+  </main>
+
+  <style>
+    .manual-attendance-container {
+      border: 2px solid rgba(255,255,255,0.1);
+      border-radius: 10px;
+      padding: 20px;
+      margin: 15px 0;
+    }
+    
+    .manual-controls {
+      margin-bottom: 20px;
+    }
+    
+    .bulk-actions {
+      display: flex;
+      gap: 10px;
+      margin-top: 15px;
+      flex-wrap: wrap;
+    }
+    
+    .students-list {
+      max-height: 400px;
+      overflow-y: auto;
+      background: rgba(0,0,0,0.1);
+      border-radius: 10px;
+      padding: 15px;
+      margin: 15px 0;
+    }
+    
+    .student-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px;
+      margin: 5px 0;
+      background: rgba(255,255,255,0.05);
+      border-radius: 8px;
+      transition: all 0.3s ease;
+    }
+    
+    .student-item:hover {
+      background: rgba(255,255,255,0.1);
+    }
+    
+    .student-info {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+    }
+    
+    .student-checkbox {
+      width: 20px;
+      height: 20px;
+      cursor: pointer;
+    }
+    
+    .attendance-status-indicator {
+      padding: 5px 10px;
+      border-radius: 15px;
+      font-size: 0.8rem;
+      font-weight: bold;
+    }
+    
+    .status-present {
+      background: rgba(76, 175, 80, 0.2);
+      color: #4CAF50;
+      border: 1px solid #4CAF50;
+    }
+    
+    .status-absent {
+      background: rgba(244, 67, 54, 0.2);
+      color: #F44336;
+      border: 1px solid #F44336;
+    }
+    
+    .status-unmarked {
+      background: rgba(255, 193, 7, 0.2);
+      color: #FFC107;
+      border: 1px solid #FFC107;
+    }
+    
+    .manual-submit {
+      margin-top: 20px;
+      text-align: center;
+    }
+    
+    .form-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 15px;
+      margin-bottom: 15px;
+    }
+    
+    .attendance-filters {
+      display: flex;
+      gap: 15px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    
+    @media (max-width: 768px) {
+      .form-row {
+        grid-template-columns: 1fr;
+      }
+      
+      .bulk-actions {
+        flex-direction: column;
+      }
+      
+      .attendance-filters {
+        flex-direction: column;
+        align-items: stretch;
+      }
+      
+      .student-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+      }
+    }
+  </style>
+</body>
+</html>
+```

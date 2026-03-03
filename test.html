@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Test QR Generation</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      color: white;
+      padding: 20px;
+    }
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+      background: rgba(255,255,255,0.1);
+      padding: 30px;
+      border-radius: 15px;
+    }
+    input, button {
+      width: 100%;
+      padding: 10px;
+      margin: 10px 0;
+      border: none;
+      border-radius: 8px;
+    }
+    button {
+      background: #4CAF50;
+      color: white;
+      cursor: pointer;
+    }
+    #qrDisplay {
+      text-align: center;
+      margin: 20px 0;
+    }
+    #qrDisplay img {
+      border: 3px solid #4CAF50;
+      border-radius: 10px;
+      background: white;
+      padding: 20px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Simple QR Code Test</h1>
+    
+    <form id="testForm">
+      <input type="text" id="subject" placeholder="Subject Name" required>
+      <input type="text" id="className" placeholder="Class Name" required>
+      <button type="submit">Generate QR Code</button>
+    </form>
+    
+    <div id="qrDisplay"></div>
+    <div id="status"></div>
+  </div>
+
+  <script>
+    document.getElementById('testForm').addEventListener('submit', function(e) {
+      e.preventDefault();
+      
+      const subject = document.getElementById('subject').value;
+      const className = document.getElementById('className').value;
+      
+      if (!subject || !className) {
+        document.getElementById('status').innerHTML = '<p style="color: red;">Please fill all fields</p>';
+        return;
+      }
+      
+      // Create session data
+      const sessionData = {
+        sessionId: Date.now() + '_' + Math.random().toString(36).substr(2, 9),
+        subject: subject,
+        className: className,
+        teacher: 'TestTeacher',
+        location: { lat: 19.0760, lng: 72.8777 },
+        startTime: Date.now(),
+        expiryTime: Date.now() + (60 * 60 * 1000) // 1 hour
+      };
+      
+      // Generate QR using API
+      const qrData = JSON.stringify(sessionData);
+      const encodedData = encodeURIComponent(qrData);
+      const qrImageUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodedData}`;
+      
+      // Display QR
+      document.getElementById('qrDisplay').innerHTML = `
+        <h3>QR Code Generated!</h3>
+        <img src="${qrImageUrl}" alt="QR Code" onload="showSuccess()" onerror="showError()">
+        <p>Subject: ${subject}</p>
+        <p>Class: ${className}</p>
+        <p>Session ID: ${sessionData.sessionId}</p>
+        <button onclick="downloadQR('${qrImageUrl}', '${subject}')">Download QR</button>
+      `;
+      
+      document.getElementById('status').innerHTML = '<p style="color: yellow;">Generating QR code...</p>';
+    });
+    
+    function showSuccess() {
+      document.getElementById('status').innerHTML = '<p style="color: lime;">QR Code generated successfully!</p>';
+    }
+    
+    function showError() {
+      document.getElementById('status').innerHTML = '<p style="color: red;">QR Code generation failed!</p>';
+    }
+    
+    function downloadQR(url, filename) {
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = filename + '_QR.png';
+      link.click();
+    }
+  </script>
+</body>
+</html>

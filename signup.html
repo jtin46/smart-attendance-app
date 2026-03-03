@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Smart Attendance - Sign Up</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="script.js" defer></script>
+</head>
+<body>
+  <div class="auth-wrapper">
+    <div class="auth-box">
+      <h1>Create Account</h1>
+      <form id="signupForm">
+        <input type="text" id="signup_username" placeholder="Username" required>
+        <input type="password" id="signup_password" placeholder="Password (min 6 chars)" required>
+        <input type="text" id="signup_fullname" placeholder="Full Name" required>
+        <input type="email" id="signup_email" placeholder="Email Address" required>
+        
+        <select id="signup_role" required onchange="toggleCollegeCode()">
+          <option value="">Select Your Role</option>
+          <option value="admin">College Admin</option>
+          <option value="teacher">Teacher</option>
+          <option value="student">Student</option>
+        </select>
+        
+        <div id="collegeCodeSection" style="display: none;">
+          <input type="text" id="signup_college_code" placeholder="Enter College Code (provided by admin)" maxlength="10">
+          <small style="color: rgba(255,255,255,0.7); font-size: 0.8rem;">
+            Teachers and Students: Get this code from your college admin
+          </small>
+        </div>
+        
+        <div id="adminCollegeSection" style="display: none;">
+          <input type="text" id="signup_college_name" placeholder="College Name">
+          <input type="text" id="signup_department" placeholder="Department">
+          <textarea id="signup_college_address" placeholder="College Address" rows="2"></textarea>
+        </div>
+        
+        <div id="teacherStudentSection" style="display: none;">
+          <input type="text" id="signup_department_ts" placeholder="Department">
+          <input type="text" id="signup_class_year" placeholder="Class/Year (e.g., CS-3A, 2024)">
+        </div>
+        
+        <button type="submit">Sign Up</button>
+      </form>
+      <div class="extra-link">
+        <a href="index.html">Already have an account? Login</a>
+      </div>
+      <div id="signupStatus" class="status-message"></div>
+    </div>
+  </div>
+
+  <script>
+    function toggleCollegeCode() {
+      const role = document.getElementById('signup_role').value;
+      const collegeCodeSection = document.getElementById('collegeCodeSection');
+      const adminSection = document.getElementById('adminCollegeSection');
+      const tsSection = document.getElementById('teacherStudentSection');
+      
+      if (role === 'admin') {
+        collegeCodeSection.style.display = 'none';
+        adminSection.style.display = 'block';
+        tsSection.style.display = 'none';
+      } else if (role === 'teacher' || role === 'student') {
+        collegeCodeSection.style.display = 'block';
+        adminSection.style.display = 'none';
+        tsSection.style.display = 'block';
+      } else {
+        collegeCodeSection.style.display = 'none';
+        adminSection.style.display = 'none';
+        tsSection.style.display = 'none';
+      }
+    }
+  </script>
+</body>
+</html>
