@@ -52,7 +52,7 @@ Geolocation: Google Maps API / CoreLocation
 
 📦 Installation & Setup
 # Clone the repository
-git clone https://github.com/your-username/smart-curriculum-app.git
+git clone (https://github.com/jtin46/smart-attendance-app.git)
 
 # Install dependencies
 npm install
