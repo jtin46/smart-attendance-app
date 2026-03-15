@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Forgot Password</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="card">
+    <h1>Forgot Password</h1>
+    <p>Enter your email and college code to receive a password reset link.</p>
+    <label for="email">Email</label>
+    <input id="email" name="email" type="email" />
+    <label for="collegeCode">College Code</label>
+    <input id="collegeCode" name="collegeCode" type="text" />
+    <button onclick="requestPasswordReset()">Send Reset Link</button>
+    <div id="msg" class="msg"></div>
+    <div class="links"><a href="login.html">Back to Login</a></div>
+  </div>
+
+<script>
+async function requestPasswordReset(){
+    const email = document.getElementById('email').value.trim();
+    const collegeCode = document.getElementById('collegeCode').value.trim();
+    const msg = document.getElementById('msg');
+    msg.textContent = '';
+    msg.className = 'msg';
+
+    if (!email || !collegeCode) {
+        msg.textContent = 'Email and College Code are required.';
+        msg.classList.add('error');
+        return;
+    }
+
+    try {
+        const res = await fetch('/forgot-password', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, collegeCode })
+        });
+        const data = await res.json();
+        msg.textContent = data.message;
+        msg.classList.add('success');
+    } catch (e) {
+        msg.textContent = 'Network error. Please try again later.';
+        msg.classList.add('error');
+    }
+}
+</script>
+</body>
+</html>

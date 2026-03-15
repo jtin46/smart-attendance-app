@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Teacher Dashboard</title>
+<link rel="stylesheet" href="style.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+</head>
+<body>
+  <header>
+    <h1 id="welcome-message">Teacher Dashboard</h1>
+    <div>
+      <span id="collegeInfo"></span> | 
+      <span id="logout">Logout</span>
+    </div>
+  </header>
+
+<div class="card">
+    <h2>Create Class & QR</h2>
+    <div class="flex-inputs">
+        <div><label for="className">Class Name:</label><input id="className" name="className"></div>
+        <div><label for="classTime">Time:</label><input id="classTime" name="classTime" type="time"></div>
+    </div>
+    <div class="flex-inputs" style="margin-top: 10px;">
+        <div><label for="year">Year</label><select id="year" name="year"><option value="">Loading...</option></select></div>
+        <div><label for="department">Department</label><select id="department" name="department"><option value="">Loading...</option></select></div>
+        <div>
+            <label for="division">Division</label>
+            <select id="division" name="division">
+                <option value="A">A</option><option value="B">B</option><option value="C">C</option>
+                <option value="D">D</option><option value="E">E</option><option value="F">F</option><option value="G">G</option>
+            </select>
+        </div>
+    </div>
+    <div class="flex-inputs" style="margin-top: 10px;">
+         <div>
+            <label for="radius">Location Radius: <span id="radius-value">50</span>m</label>
+            <input type="range" id="radius" name="radius" min="10" max="100" step="10" value="50" oninput="document.getElementById('radius-value').textContent = this.value">
+        </div>
+        <div>
+            <label for="duration">QR Validity (seconds)</label>
+            <input id="duration" name="duration" type="number" value="60" min="10" max="600">
+        </div>
+    </div>
+    <button onclick="createClass()" style="margin-top: 15px;">Create Class</button>
+    <div id="qr" style="margin-top:10px; text-align:center;"></div>
+</div>
+
+  <div class="card" id="manual-attendance-section" style="display: none;">
+    <h2>Manual Attendance</h2>
+    <table>
+      <thead><tr><th>Name</th><th>Mark Present</th></tr></thead>
+      <tbody id="attendanceRows"></tbody>
+    </table>
+      <button onclick="submitAttendance()" style="margin-top:10px;">Update Attendance</button>
+  </div>
+  
+  <div class="card" id="report-section">
+      <h2>Attendance Report (Past Sessions)</h2>
+      <label for="sessionSelect">Select a Class Session:</label>
+      <select id="sessionSelect" onchange="loadAttendanceForSession(this.value)">
+        <option value="">-- Choose a session --</option>
+      </select>
+      <div id="past-session-qr" style="margin-top:10px; text-align:center;"></div>
+      <table style="margin-top: 15px;">
+        <thead><tr><th>Student Name</th><th>Status</th></tr></thead>
+        <tbody id="reportRows"></tbody>
+      </table>
+  </div>
+
+<div class="card">
+    <h2>📊 Download Reports</h2>
+    <p>Select the criteria and download the attendance sheet as an Excel file.</p>
+    <div class="flex-inputs">
+        <div>
+            <label for="reportYear">Year</label>
+            <select id="reportYear" name="reportYear"><option value="">Loading...</option></select>
+        </div>
+        <div>
+            <label for="reportDepartment">Department</label>
+            <select id="reportDepartment" name="reportDepartment"><option value="">Loading...</option></select>
+        </div>
+        <div>
+            <label for="reportDivision">Division</label>
+            <select id="reportDivision" name="reportDivision">
+                <option value="A">A</option><option value="B">B</option><option value="C">C</option>
+                <option value="D">D</option><option value="E">E</option><option value="F">F</option>
+                <option value="G">G</option>
+            </select>
+        </div>
+    </div>
+    <div class="flex-inputs" style="margin-top: 10px;">
+        <div>
+            <label for="reportMonth">Month</label>
+            <select id="reportMonth" name="reportMonth">
+                <option value="01">January</option><option value="02">February</option>
+                <option value="03">March</option><option value="04">April</option>
+                <option value="05">May</option><option value="06">June</option>
+                <option value="07">July</option><option value="08">August</option>
+                <option value="09">September</option><option value="10">October</option>
+                <option value="11">November</option><option value="12">December</option>
+            </select>
+        </div>
+        <div>
+            <label for="reportSubject">Subject/Class</label>
+            <select id="reportSubject" name="reportSubject">
+                <option value="">-- All Subjects --</option>
+            </select>
+        </div>
+    </div>
+    <button onclick="downloadReport()" style="margin-top: 15px;">Download Excel Report</button>
+</div>
+
+<!-- NEW: Curriculum Activity Section -->
+<div class="card">
+    <h2>Curriculum Activity (Offline Lecture)</h2>
+    <p>Share a YouTube video for students to watch if a lecture is cancelled. A quiz will be generated automatically.</p>
+    <div class="flex-inputs">
+        <div><label for="youtubeLink">YouTube Video URL</label><input id="youtubeLink" name="youtubeLink" type="text" placeholder="https://www.youtube.com/watch?v=..."></div>
+        <div><label for="videoTopic">Video Topic</label><input id="videoTopic" name="videoTopic" type="text" placeholder="e.g., Introduction to Algorithms"></div>
+    </div>
+    <div class="flex-inputs" style="margin-top: 10px;">
+        <div><label for="activity_year">Target Year</label><select id="activity_year"><option value="">-- All --</option></select></div>
+        <div><label for="activity_department">Target Dept</label><select id="activity_department"><option value="">-- All --</option></select></div>
+        <div>
+            <label for="activity_division">Target Div</label>
+            <select id="activity_division">
+                <option value="">-- All --</option>
+                <option value="A">A</option><option value="B">B</option><option value="C">C</option>
+                <option value="D">D</option><option value="E">E</option><option value="F">F</option><option value="G">G</option>
+            </select>
+        </div>
+    </div>
+    <button onclick="shareVideo()" style="margin-top:10px;">Share Video Activity</button>
+    <h3 style="margin-top: var(--space-xl); font-size: var(--font-size-lg);">Previously Shared Activities</h3>
+    <ul id="curriculum-activities-list"></ul>
+</div>
+
+
+<div class="card">
+    <h2>Timetable</h2>
+    <div class="flex-inputs">
+        <div><label for="timetable_subject">Subject</label><input id="timetable_subject" name="timetable_subject" type="text"></div>
+        <div><label for="timetable_time">Time</label><input id="timetable_time" name="timetable_time" type="time"></div>
+    </div>
+    <div class="flex-inputs" style="margin-top: 10px;">
+        <div><label for="timetable_year">Target Year</label><select id="timetable_year"><option value="">-- All --</option></select></div>
+        <div><label for="timetable_department">Target Dept</label><select id="timetable_department"><option value="">-- All --</option></select></div>
+        <div>
+            <label for="timetable_division">Target Div</label>
+            <select id="timetable_division">
+                <option value="">-- All --</option>
+                <option value="A">A</option><option value="B">B</option><option value="C">C</option>
+                <option value="D">D</option><option value="E">E</option><option value="F">F</option><option value="G">G</option>
+            </select>
+        </div>
+    </div>
+    <button onclick="addTimetable()" style="margin-top:10px;">Add to Timetable</button>
+    <ul id="timetable"></ul>
+</div>
+
+<div class="card">
+    <h2>Notices</h2>
+    <div class="flex-inputs" style="margin-bottom: 10px;">
+        <div><label for="notice_year">Target Year</label><select id="notice_year"><option value="">-- All --</option></select></div>
+        <div><label for="notice_department">Target Department</label><select id="notice_department"><option value="">-- All --</option></select></div>
+        <div>
+            <label for="notice_division">Target Division</label>
+            <select id="notice_division">
+                <option value="">-- All --</option>
+                <option value="A">A</option><option value="B">B</option><option value="C">C</option>
+                <option value="D">D</option><option value="E">E</option><option value="F">F</option><option value="G">G</option>
+            </select>
+        </div>
+    </div>
+    <label for="notice_message" style="margin-top:10px;">Notice Message</label>
+    <textarea id="notice_message" name="notice_message" rows="2" placeholder="Enter your notice here..."></textarea>
+    <button onclick="sendNotice()" style="margin-top:10px;">Send Notice</button>
+    <ul id="notices"></ul>
+</div>
+
+<script>
+const userName = localStorage.getItem('name');
+if (userName) document.getElementById('welcome-message').textContent = `Hello, ${userName}`;
+
+const token = localStorage.getItem('token');
+if (!token || localStorage.getItem('role') !== 'teacher') {
+    alert('Teacher login required');
+    window.location.href = 'login.html';
+}
+
+const collegeName = localStorage.getItem('collegeName');
+const collegeCode = localStorage.getItem('collegeCode');
+const currentUserId = localStorage.getItem('userId');
+
+document.getElementById('logout').onclick = () => { localStorage.clear(); location.href = 'login.html'; };
+document.getElementById('collegeInfo').textContent = 'College: ' + (collegeName || 'N/A');
+
+const socket = io();
+let lastSessionId = null;
+let qrTimerInterval = null;
+
+function ts() { return Date.now(); }
+
+// --- CORE FUNCTIONS ---
+
+async function fetchAndPopulateStructureDropdowns() {
+    if (!collegeCode) return;
+    try {
+        const res = await fetch(`/structure/${collegeCode}`);
+        const data = await res.json();
+        
+        const populate = (id, options) => {
+            const select = document.getElementById(id);
+            if (!select) return;
+            select.innerHTML = '<option value="">-- All --</option>';
+            options.forEach(optionText => {
+                const opt = document.createElement('option');
+                opt.value = optionText;
+                opt.textContent = optionText;
+                select.appendChild(opt);
+            });
+        };
+        
+        const idsToPopulate = ['year', 'department', 'notice_year', 'notice_department', 'timetable_year', 'timetable_department', 'activity_year', 'activity_department'];
+        idsToPopulate.forEach(id => populate(id, (id.includes('department') ? data.departments : data.years) || []));
+
+    } catch (err) {
+        console.error("Failed to fetch college structure", err);
+    }
+}
+
+// --- CLASS SESSION AND ATTENDANCE ---
+function startQrTimer(durationInSeconds) {
+    if (qrTimerInterval) clearInterval(qrTimerInterval);
+    const timerEl = document.getElementById('qr-timer');
+    if (!timerEl) return;
+    
+    let remaining = durationInSeconds;
+    timerEl.style.fontWeight = 'bold';
+    timerEl.style.marginTop = '5px';
+
+    qrTimerInterval = setInterval(() => {
+        if (remaining <= 0) {
+            clearInterval(qrTimerInterval);
+            document.getElementById('qr').innerHTML = '<div style="font-weight: bold; color: var(--danger-color);">QR Code Expired</div>';
+        } else {
+            const minutes = Math.floor(remaining / 60);
+            const seconds = remaining % 60;
+            timerEl.textContent = `Expires in: ${minutes}:${seconds.toString().padStart(2, '0')}`;
+            remaining--;
+        }
+    }, 1000);
+}
+
+async function createClass() {
+    // ... (existing function, no changes)
+}
+
+async function loadSessionList() {
+    // ... (existing function, no changes)
+}
+
+async function loadAttendanceForSession(sessionId) {
+    // ... (existing function, no changes)
+}
+
+
+async function submitAttendance() {
+    // ... (existing function, no changes)
+}
+
+// --- REPORTING FUNCTIONS ---
+async function populateReportDropdowns() {
+    // ... (existing function, no changes)
+}
+
+async function downloadReport() {
+    // ... (existing function, no changes)
+}
+
+
+// --- TIMETABLE FUNCTIONS ---
+async function addTimetable() { /* ... existing ... */ }
+async function loadTimetable() { /* ... existing ... */ }
+async function deleteTimetable(id) { /* ... existing ... */ }
+
+// --- NOTICE FUNCTIONS ---
+async function sendNotice() { /* ... existing ... */ }
+async function loadNotices() { /* ... existing ... */ }
+async function deleteNotice(id) { /* ... existing ... */ }
+
+// --- NEW: CURRICULUM ACTIVITY FUNCTIONS ---
+async function shareVideo() {
+    const youtube_url = document.getElementById('youtubeLink').value.trim();
+    const topic = document.getElementById('videoTopic').value.trim();
+
+    if (!youtube_url || !topic) {
+        return alert('YouTube URL and Topic are required.');
+    }
+    // Basic YouTube URL validation
+    if (!youtube_url.includes('youtube.com') && !youtube_url.includes('youtu.be')) {
+        return alert('Please enter a valid YouTube URL.');
+    }
+
+    const body = {
+        youtube_url,
+        topic,
+        year: document.getElementById('activity_year').value,
+        department: document.getElementById('activity_department').value,
+        division: document.getElementById('activity_division').value
+    };
+
+    try {
+        const res = await fetch('/teacher/curriculum-activity', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+            body: JSON.stringify(body)
+        });
+        const data = await res.json();
+        if (data.error) {
+            alert('Error sharing video: ' + data.error);
+        } else {
+            alert(data.message);
+            document.getElementById('youtubeLink').value = '';
+            document.getElementById('videoTopic').value = '';
+            loadSharedActivities();
+        }
+    } catch (err) {
+        console.error('Failed to share video activity:', err);
+        alert('An error occurred. Please try again.');
+    }
+}
+
+async function loadSharedActivities() {
+    try {
+        const res = await fetch(`/teacher/curriculum-activities?_=${ts()}`, { headers: { 'Authorization': 'Bearer ' + token } });
+        const activities = await res.json();
+        const ul = document.getElementById('curriculum-activities-list');
+        ul.innerHTML = '';
+        if (activities.length === 0) {
+            ul.innerHTML = '<li>You have not shared any activities yet.</li>';
+            return;
+        }
+        activities.forEach(activity => {
+            const li = document.createElement('li');
+            const target = [activity.year, activity.department, activity.division].filter(Boolean).join('-') || 'All Students';
+            li.innerHTML = `<span><strong>${activity.topic}</strong> (To: ${target})</span>`;
+            
+            const deleteBtn = document.createElement('button');
+            deleteBtn.textContent = 'Delete';
+            deleteBtn.className = 'small';
+            deleteBtn.style.marginLeft = '10px';
+            deleteBtn.onclick = () => deleteSharedActivity(activity.id);
+            li.appendChild(deleteBtn);
+            ul.appendChild(li);
+        });
+    } catch(err) {
+        console.error('Failed to load shared activities:', err);
+    }
+}
+
+async function deleteSharedActivity(id) {
+    if (!confirm('Are you sure you want to delete this activity? This will remove it for all students.')) return;
+    try {
+        await fetch(`/teacher/curriculum-activity/${id}`, {
+            method: 'DELETE',
+            headers: { 'Authorization': 'Bearer ' + token }
+        });
+        loadSharedActivities();
+    } catch (err) {
+        console.error('Failed to delete activity:', err);
+    }
+}
+
+
+// --- SOCKET.IO LISTENERS ---
+socket.on('connect', () => {
+  loadSessionList();
+  loadNotices();
+  loadTimetable();
+  loadSharedActivities(); // New
+});
+
+socket.on('attendanceUpdated', () => {
+    if (lastSessionId) {
+        loadAttendanceForSession(lastSessionId);
+    }
+});
+socket.on('noticesUpdated', loadNotices);
+socket.on('timetableUpdated', loadTimetable);
+socket.on('curriculumActivityUpdated', loadSharedActivities); // New
+
+// --- INITIAL PAGE LOADS ---
+fetchAndPopulateStructureDropdowns();
+loadSessionList();
+loadNotices();
+loadTimetable();
+populateReportDropdowns();
+loadSharedActivities(); // New
+</script>
+</body>
+</html>
